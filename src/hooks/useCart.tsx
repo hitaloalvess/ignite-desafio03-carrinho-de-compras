@@ -1,3 +1,4 @@
+import { totalmem } from 'os';
 import { useEffect } from 'react';
 import { createContext, ReactNode, useContext, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -33,34 +34,21 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     return [];
   });
 
-  const [stock, setStock] = useState<Stock[]>([])
-
-  useEffect(()=> {
-    async function pickStock(){
-        const resp = await api('/stock')
-        const dataStock = resp.data
-
-        setStock(dataStock);
-    }
-
-    pickStock();
-  }, [])
-
   const addProduct = async (productId: number) => {
     try {
       const product = await api(`/products/${productId}`)
-      const stockItem = stock[productId - 1]
+      const stockItem =  await api(`/stock/${productId}`)
 
       let newCart;
 
-      if(stockItem.amount <= 0){
+      if(stockItem.data.amount <= 1){
         toast.error('Quantidade solicitada fora de estoque');
         return;
       }
-
           const itemExists = cart.find( product => product.id === productId)
 
           if(itemExists){
+            
             newCart = cart.map(product => {
               if(product.id === productId){
                 return {
@@ -88,10 +76,18 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const removeProduct = (productId: number) => {
     try {
+
+      const itemExists = cart.find( product => product.id === productId)
+
+      if(!itemExists){
+          toast.error('Erro na remoção do produto');
+          return;
+      }
+      
       const newCart = cart.filter( product => product.id !== productId)
 
       localStorage.setItem('@RocketShoes:cart', JSON.stringify(newCart))
-      setCart(newCart); //VERIFICAR DEPOIS PARA VER SE ESTA DENTRO DO CONCEITO DE IMUTABILIDADE
+      setCart(newCart); 
 
     } catch {
       toast.error('Erro na remoção do produto');
@@ -103,11 +99,11 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      const stockItem = stock[productId - 1];
+      const stockItem = await api(`/stock/${productId}`);
 
-      if(stockItem.amount <= 0) return;
+      if(stockItem.data.amount < 1 || amount < 1) return;
 
-      if(stockItem.amount < amount){
+      if(stockItem.data.amount < amount ){
         toast.error('Quantidade solicitada fora de estoque');
         return;
       }
