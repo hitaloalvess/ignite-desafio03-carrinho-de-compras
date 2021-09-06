@@ -51,6 +51,9 @@ git clone https://github.com/hitaloalvess/rocketshoes.git
 # Instale as dependências:
 yarn install
 
+# Abra a pasta /final:
+cd final
+
 # Iniciando servidor
 yarn server
 
